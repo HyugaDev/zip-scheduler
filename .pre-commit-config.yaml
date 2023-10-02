@@ -1,0 +1,23 @@
+repos:
+  - repo: https://github.com/psf/black
+    # Replace rev with any tag/version: https://github.com/psf/black/tags
+    # 21.7b0  is latest stable as of Aug 2021
+    rev: 21.7b0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.902
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-all
+        args: [--disallow-untyped-defs, --disallow-incomplete-defs]
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: "3.9.2"
+    hooks:
+      - id: flake8
+        # Black introduces a few things that flake8 doesn't like
+        # Just ignore them.
+        args: ["--ignore=E501,W503"]
