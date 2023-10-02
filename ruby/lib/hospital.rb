@@ -1,7 +1,7 @@
 ##
 # You shouldn't need to modify this class
 class Hospital
-  attr_reader :name
+  attr_reader :name, :north_m, :east_m
 
   def initialize(name, north_m, east_m)
     @name = name

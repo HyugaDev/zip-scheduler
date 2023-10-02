@@ -3,6 +3,7 @@ require './lib/hospital'
 require './lib/order'
 require './lib/scheduler'
 require './lib/runner.rb'
+require './lib/flight.rb'
 
 class Runner
   include Constants
@@ -37,7 +38,7 @@ class Runner
       # Find and queue pending orders.
       queue_pending_orders(sec_since_midnight)
 
-      if sec_since_midnight % 60 == 0
+      if sec_since_midnight % 180 == 0
         # Once a minute, poke the flight launcher
         update_launch_flights(sec_since_midnight)
       end
@@ -76,7 +77,7 @@ class Runner
   end
 
   def time_of_next_order
-    orders[0].time
+    orders[0].time unless orders.empty?
   end
 
   def next_order_not_due(sec_since_midnight)
