@@ -29,9 +29,8 @@ class Runner
     (time_of_next_order..SEC_PER_DAY).each do |sec_since_midnight|
       queue_pending_orders(sec_since_midnight)
 
-      if sec_since_midnight % 180 == 0
-        time_until_next_order = time_of_next_order - sec_since_midnight if time_of_next_order
-        update_launch_flights(sec_since_midnight, time_until_next_order)
+      if sec_since_midnight % 60 == 0
+        update_launch_flights(sec_since_midnight)
       end
     end
 
@@ -51,12 +50,12 @@ class Runner
     end
   end
 
-  def update_launch_flights(sec_since_midnight, time_until_next_order)
-    flights = scheduler.launch_flights(sec_since_midnight, time_until_next_order)
+  def update_launch_flights(sec_since_midnight)
+    flights = scheduler.launch_flights(sec_since_midnight)
     unless flights.empty?
       puts("[#{sec_since_midnight}] Scheduling flights:")
       flights.each { |flight| puts(flight) }
-      puts("------------------------------------------------")
+      puts("---------------------------------------------")
     end
     scheduler.check_completed_flights(sec_since_midnight, flights)
   end
