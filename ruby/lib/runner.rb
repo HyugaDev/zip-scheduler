@@ -25,34 +25,21 @@ class Runner
     )
   end
 
-  ##
-  # Run the simulator.
-  # This assumes any orders not fulfilled by the end of the day are failed.
-  #
-  # Note: This is a barebones implementation that should help get you started. You probably want
-  # to expand the runner's capabilities.
   def run
-    # Simulate time going from the first order time, until the end of the day,
-    # in 1 minute increments
     (time_of_next_order..SEC_PER_DAY).each do |sec_since_midnight|
-      # Find and queue pending orders.
       queue_pending_orders(sec_since_midnight)
 
       if sec_since_midnight % 180 == 0
-        # Once a minute, poke the flight launcher
-        update_launch_flights(sec_since_midnight)
+        time_until_next_order = time_of_next_order - sec_since_midnight if time_of_next_order
+        update_launch_flights(sec_since_midnight, time_until_next_order)
       end
     end
 
-    # These orders were not launched by midnight
     puts("#{scheduler.unfulfilled_orders.length} unfulfilled orders at the end of the day")
   end
 
   private
-  ##
-  # Grab an order from the queue and queue it.
-  #
-  # @param [Integer] sec_since_midnight Seconds since midnight.
+
   def queue_pending_orders(sec_since_midnight)
 
     until no_orders_remaining || next_order_not_due(sec_since_midnight)
@@ -64,16 +51,14 @@ class Runner
     end
   end
 
-  ##
-  # Schedule which flights should launch now.
-  #
-  # @param [Integer] sec_since_midnight Seconds since midnight.
-  def update_launch_flights(sec_since_midnight)
-    flights = scheduler.launch_flights(sec_since_midnight)
+  def update_launch_flights(sec_since_midnight, time_until_next_order)
+    flights = scheduler.launch_flights(sec_since_midnight, time_until_next_order)
     unless flights.empty?
       puts("[#{sec_since_midnight}] Scheduling flights:")
       flights.each { |flight| puts(flight) }
+      puts("------------------------------------------------")
     end
+    scheduler.check_completed_flights(sec_since_midnight, flights)
   end
 
   def time_of_next_order

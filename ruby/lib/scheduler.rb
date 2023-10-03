@@ -13,65 +13,76 @@ class ZipScheduler
     @max_packages_per_zip = max_packages_per_zip
     @zip_speed_mps = zip_speed_mps
     @zip_max_cumulative_range_m = max_cumulative_m
-
-    # Track which orders haven't been launched yet
     @unfulfilled_orders = []
+    @zips_status = Array.new(num_zips, false)
   end
 
-  ##
-  # Add a new order to our queue.
-  #
-  # Note: Called every time a new order arrives.
-  #
-  # @param [Order] order The order just placed.
   def queue_order(order)
     @unfulfilled_orders.append(order)
     @unfulfilled_orders.sort_by! { |o| [o.priority == 'Emergency' ? 0 : 1, o.time] }
   end
 
-  ##
-  # Determines which flights should be launched right now. Each flight has an ordered list of
-  # Orders to serve.
-  #
-  # Note: Will be called periodically (approximately once a minute).
-  #
-  # @param [Integer] current_time Seconds since midnight.
-  # @return [Array] Flight objects that launch at this time.
-  def launch_flights(current_time)
+  def launch_flights(current_time, time_until_next_order)
     flights_to_launch = []
-
-    # Loop through available Zips
-    (1..@num_zips).each do |zip_id|
+    @num_zips.times do |zip_id|
+      next if @zips_status[zip_id - 1]
       current_flight_orders = []
       current_range = 0.0
 
       @unfulfilled_orders.each do |order|
-        # Calculate the distance to the hospital for the current order
         distance_to_hospital = calculate_distance_to_hospital(order.hospital)
 
-        # Check if the Zip can accommodate the order and stay within its range
         if (current_flight_orders.length < @max_packages_per_zip) && (current_range + distance_to_hospital <= @zip_max_cumulative_range_m)
           current_flight_orders.append(order)
           current_range += distance_to_hospital
         end
       end
 
-      # Create a new Flight if there are orders for this Zip
       if current_flight_orders.any?
-        flights_to_launch.append(Flight.new(current_time, current_flight_orders))
+        flight_time = (current_range / @zip_speed_mps).to_i
+        flight = Flight.new(current_time, current_flight_orders, flight_time)
+        check_busy_flight(time_until_next_order, flight, zip_id)
+        flights_to_launch << flight
         current_flight_orders.each { |order| @unfulfilled_orders.delete(order) }
+        
+        @zips_status[zip_id] = true
+        flight.busy_time = flight_time
       end
     end
-    # p @flights_to_launch
+
+    check_completed_flights(current_time, flights_to_launch)
     flights_to_launch
+  end
+
+  def check_completed_flights(current_time, flights_to_launch)
+    flights_to_launch.each do |flight|
+      next unless flight.busy_time
+  
+      flight.busy_time -= 1
+      if flight.busy_time.zero?
+        @zips_status[flight.zip_id] = false
+      end
+    end
+  
+    flights_to_launch.delete_if { |flight| flight.busy_time.zero? }
   end
 
   private
 
-  # Calculate the distance from the Nest to the hospital
   def calculate_distance_to_hospital(hospital)
     north_diff = hospital.north_m
     east_diff = hospital.east_m
     Math.sqrt(north_diff**2 + east_diff**2)
+  end
+
+  def check_busy_flight(time_until_next_order, flight, zip_id)
+    if flight.busy_time
+      flight.busy_time -= time_until_next_order unless time_until_next_order.nil?
+      flight.busy_time = 0 if flight.busy_time.negative?
+    end
+
+    if flight.busy_time.zero?
+      @zips_status[zip_id] = false
+    end
   end
 end
