@@ -2,7 +2,6 @@ require './lib/constants'
 require './lib/hospital'
 require './lib/order'
 require './lib/scheduler'
-require './lib/runner.rb'
 require './lib/flight.rb'
 
 class Runner

@@ -69,11 +69,11 @@ class ZipScheduler
   end
 
   def check_completed_flights(current_time, flights_to_launch)
-    flights_to_launch.each do |flight|
+    flights_to_launch.each_with_index do |flight, index|
       next unless flight.busy_time
       flight.busy_time -= 1
       if flight.busy_time.zero?
-        @zips_status[flight.zip_id] = false
+        @zips_status[index] = false
       end
     end
     flights_to_launch.delete_if { |flight| flight.busy_time.zero? }
