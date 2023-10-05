@@ -44,6 +44,10 @@ class ZipScheduler
           zip_current_orders[zip_id] += distance_to_hospital
           break
         end
+        unless @zips_status[zip_id - 1]
+          puts("Order for #{order.hospital.name} is not selected for Zip #{zip_id} - Reason: Zip is busy or over capacity")
+        end
+    
       end
     end
 

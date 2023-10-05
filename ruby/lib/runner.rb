@@ -53,8 +53,11 @@ class Runner
     flights = scheduler.launch_flights(sec_since_midnight)
     unless flights.empty?
       puts("[#{sec_since_midnight}] Scheduling flights:")
-      flights.each { |flight| puts(flight) }
-      puts("---------------------------------------------")
+      flights.each do |flight|
+        puts("Flight: #{flight}")
+        puts("Busy Time: #{flight.busy_time}")
+        puts("--------------------------------------------------------")
+      end
     end
     scheduler.check_completed_flights(sec_since_midnight, flights)
   end
